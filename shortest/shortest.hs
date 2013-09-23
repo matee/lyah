@@ -1,14 +1,24 @@
-import Data.List
+import Data.List(foldl')
+import qualified Data.ByteString as B (ByteString,getContents)
+import qualified Data.ByteString.Char8 as C (readInt,lines)
+import Criterion.Main
 
-main = do
-    contents <- getContents
-    let threes = groupsOf 3 (map read $ lines contents)
+main = defaultMain [bench "Heathrow to London" oldMain]
+
+oldMain = do
+    contents <- B.getContents
+    let threes = groupsOf 3 (map bsToInt $ C.lines contents)
         roadSystem = map (\[a,b,c] -> Section a b c) threes
         path = optimalPath roadSystem
         pathString = concat $ map (show . fst) path
         pathPrice = sum $ map snd path
     putStrLn $ "The best path to take is: " ++ pathString
     putStrLn $ "The price is: " ++ show pathPrice
+
+bsToInt :: B.ByteString -> Int
+bsToInt bs = case C.readInt bs of
+                Just (number, _) -> number
+                Nothing          -> error "Not a number!"
 
 data Section = Section { getA :: Int
                        , getB :: Int
@@ -29,7 +39,7 @@ type Path = [(Label, Int)]
 
 optimalPath :: RoadSystem -> Path
 optimalPath roadSystem =
-    let (bestAPath, bestBPath,_,_) = foldl roadStep ([],[],0,0) roadSystem
+    let (bestAPath, bestBPath,_,_) = foldl' roadStep ([],[],0,0) roadSystem
     in  if sum (map snd bestAPath) <= sum (map snd bestBPath)
         then reverse bestAPath
         else reverse bestBPath
