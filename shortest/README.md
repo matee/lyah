@@ -3,8 +3,8 @@
 The *Heathrow to London* problem, as seen in 
 [Learn You a Haskell](http://learnyouahaskell.com/functionally-solving-problems)
 
-- `randroute.hs` makes a road system with specified number of sections. Unsafe at the time.
-- `shortest.hs` finds the optimal path.
+- [`randroute.hs`](randroute.hs) makes a road system with specified number of sections. Unsafe at the time.
+- [`shortest.hs`](shortest.hs) finds the optimal path.
 
 #### Benchmark
 
