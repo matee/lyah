@@ -1,11 +1,12 @@
 import Data.List(foldl')
-import qualified Data.ByteString as B (ByteString,getContents)
-import qualified Data.ByteString.Char8 as C (readInt,lines)
-import Criterion.Main
+import qualified Data.ByteString.Lazy as B (ByteString,getContents)
+import qualified Data.ByteString.Lazy.Char8 as C (readInt,lines)
+-- import Criterion.Main
 
-main = defaultMain [bench "Heathrow to London" oldMain]
+-- main = defaultMain [bench "Heathrow to London" oldMain]
 
-oldMain = do
+-- oldMain = do
+main = do
     contents <- B.getContents
     let threes = groupsOf 3 (map bsToInt $ C.lines contents)
         roadSystem = map (\[a,b,c] -> Section a b c) threes
