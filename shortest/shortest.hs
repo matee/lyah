@@ -1,19 +1,67 @@
 import Data.List(foldl')
-import qualified Data.ByteString.Lazy as B (ByteString,getContents)
+import System.Environment
+import qualified Data.ByteString.Lazy as B (ByteString,getContents,readFile)
 import qualified Data.ByteString.Lazy.Char8 as C (readInt,lines)
--- import Criterion.Main
+import qualified Data.ByteString as B' (ByteString,getContents,readFile)
+import qualified Data.ByteString.Char8 as C' (readInt,lines)
+-- import Criterion.Main (defaultMain, bench)
+-- Criterion is hard
+-- main = do
+--     let fileName = "5000.route"
+--     contents <- readFile fileName
+--     bs_contents <- B.readFile fileName
+--     bs_contents' <- B'.readFile fileName
+--     defaultMain [ bench "simple foldl" (simple contents)
+--                 , bench "simple foldl'" (simple' contents)
+--                 , bench "ByteString lazy" (bs bs_contents)
+--                 , bench "ByteString strict" (bs' bs_contents')
+--                 ]
 
--- main = defaultMain [bench "Heathrow to London" oldMain]
-
--- oldMain = do
 main = do
-    contents <- B.getContents
-    let threes = groupsOf 3 (map bsToInt $ C.lines contents)
+    (fileName:_) <- getArgs
+    -- simple fileName
+    -- simple' fileName
+    -- bs fileName
+    bs' fileName
+                
+simple :: String -> IO ()
+simple file = do
+    contents <- readFile file
+    let threes = groupsOf 3 (map read $ lines contents)
         roadSystem = map (\[a,b,c] -> Section a b c) threes
         path = optimalPath roadSystem
         pathString = concat $ map (show . fst) path
         pathPrice = sum $ map snd path
-    putStrLn $ "The best path to take is: " ++ pathString
+    putStrLn $ "The price is: " ++ show pathPrice
+    
+simple' :: String -> IO ()
+simple' file = do
+    contents <- readFile file
+    let threes = groupsOf 3 (map read $ lines contents)
+        roadSystem = map (\[a,b,c] -> Section a b c) threes
+        path = optimalPath' roadSystem
+        pathString = concat $ map (show . fst) path
+        pathPrice = sum $ map snd path
+    putStrLn $ "The price is: " ++ show pathPrice
+    
+bs :: String -> IO ()
+bs file = do
+    contents <- B.readFile file
+    let threes = groupsOf 3 (map bsToInt $ C.lines contents)
+        roadSystem = map (\[a,b,c] -> Section a b c) threes
+        path = optimalPath' roadSystem
+        pathString = concat $ map (show . fst) path
+        pathPrice = sum $ map snd path
+    putStrLn $ "The price is: " ++ show pathPrice
+
+bs' :: String -> IO ()
+bs' file = do
+    contents <- B'.readFile file
+    let threes = groupsOf 3 (map bsToInt' $ C'.lines contents)
+        roadSystem = map (\[a,b,c] -> Section a b c) threes
+        path = optimalPath' roadSystem
+        pathString = concat $ map (show . fst) path
+        pathPrice = sum $ map snd path
     putStrLn $ "The price is: " ++ show pathPrice
 
 bsToInt :: B.ByteString -> Int
@@ -21,25 +69,32 @@ bsToInt bs = case C.readInt bs of
                 Just (number, _) -> number
                 Nothing          -> error "Not a number!"
 
+bsToInt' :: B'.ByteString -> Int
+bsToInt' bs = case C'.readInt bs of
+                Just (number, _) -> number
+                Nothing          -> error "Not a number!"
+
+
 data Section = Section { getA :: Int
                        , getB :: Int
                        , getC :: Int
-                       } deriving (Show)
+                       } -- deriving (Show)
 
 type RoadSystem = [Section]
 
-heathrowToLondon :: RoadSystem
-heathrowToLondon = [ Section 50 10 30
-                   , Section 5 90 20
-                   , Section 40 2 25
-                   , Section 10 8 0
-                   ]
-
 data Label = A | B | C deriving (Show)
+
 type Path = [(Label, Int)]
 
 optimalPath :: RoadSystem -> Path
 optimalPath roadSystem =
+    let (bestAPath, bestBPath,_,_) = foldl roadStep ([],[],0,0) roadSystem
+    in  if sum (map snd bestAPath) <= sum (map snd bestBPath)
+        then reverse bestAPath
+        else reverse bestBPath
+        
+optimalPath' :: RoadSystem -> Path
+optimalPath' roadSystem =
     let (bestAPath, bestBPath,_,_) = foldl' roadStep ([],[],0,0) roadSystem
     in  if sum (map snd bestAPath) <= sum (map snd bestBPath)
         then reverse bestAPath
