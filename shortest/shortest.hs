@@ -21,8 +21,9 @@ import qualified Data.ByteString.Char8 as C' (readInt,lines)
 
 -- | The main function, where you can switch 
 main = do
-    (fileName:fx:_) <- getArgs
-    let num = read fx :: Int
+    args <- getArgs
+    let fileName = head args
+        num = read . head . tail $ args :: Int
     case num of
         1 -> simple fileName
         2 -> simple' fileName
