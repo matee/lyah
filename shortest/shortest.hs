@@ -1,3 +1,5 @@
+{-# LANGUAGE BangPatterns #-}
+
 import Data.List(foldl')
 import System.Environment
 import qualified Data.ByteString.Lazy as B (ByteString,getContents,readFile)
@@ -17,14 +19,23 @@ import qualified Data.ByteString.Char8 as C' (readInt,lines)
 --                 , bench "ByteString strict" (bs' bs_contents')
 --                 ]
 
+-- | The main function, where you can switch 
 main = do
-    (fileName:_) <- getArgs
-    -- simple fileName
-    -- simple' fileName
-    -- bs fileName
-    bs' fileName
-                
-simple :: String -> IO ()
+    (fileName:fx:_) <- getArgs
+    let num = read fx :: Int
+    case num of
+        1 -> simple fileName
+        2 -> simple' fileName
+        3 -> bs fileName
+        otherwise -> bs' fileName
+
+-- | The simple version of the Heathrow-to-London alforithm
+-- It tries to use only the basics of Haskell in compiler agnostic way. This
+-- means no pre-processor pragmas, etc.                
+simple :: String -- ^ Name of the file to consume. There should be an 'Int' on
+                 -- each line. There should be total 'n' lines, where
+                 -- 'n mod 3 == 0'.
+       -> IO ()
 simple file = do
     contents <- readFile file
     let threes = groupsOf 3 (map read $ lines contents)
@@ -64,29 +75,45 @@ bs' file = do
         pathPrice = sum $ map snd path
     putStrLn $ "The price is: " ++ show pathPrice
 
-bsToInt :: B.ByteString -> Int
+-- | Convert a 'ByteString' to an 'Int'. Lazy version
+-- An easy to use replacement for original 'read'
+-- that works on plain 'String's.
+bsToInt :: B.ByteString -- ^ A 'ByteString.Lazy' containing digits
+        -> Int          -- ^ 'Int' representation of the input
 bsToInt bs = case C.readInt bs of
                 Just (number, _) -> number
                 Nothing          -> error "Not a number!"
 
-bsToInt' :: B'.ByteString -> Int
+-- | Convert a 'ByteString' to an 'Int'. Strict version
+-- An easy to use replacement for original 'read'
+-- that works on plain 'String's.
+bsToInt' :: B'.ByteString -- ^ A strict 'ByteString' containing digits
+         -> Int           -- ^ 'Int' representation of the input
 bsToInt' bs = case C'.readInt bs of
                 Just (number, _) -> number
                 Nothing          -> error "Not a number!"
 
-
-data Section = Section { getA :: Int
-                       , getB :: Int
-                       , getC :: Int
+-- | Defines a group of three roads.
+data Section = Section { getA :: Int -- ^ Cost of the upper road
+                       , getB :: Int -- ^ Cost of the lower road
+                       , getC :: Int -- ^ Cost of the crossing at the end of the roads A and B
                        } -- deriving (Show)
 
+-- | A road system is a list of 'Section's
 type RoadSystem = [Section]
 
-data Label = A | B | C deriving (Show)
+-- | A label for a road
+data Label = A  -- ^ The upper road
+           | B  -- ^ The lower road
+           | C  -- ^ The crossing
+           deriving (Show)
 
+-- | A 'Path' is list of roads ('Label's) and their costs
 type Path = [(Label, Int)]
 
-optimalPath :: RoadSystem -> Path
+-- | Compute optimal path for a 'RoadSystem'
+optimalPath :: RoadSystem -- ^ 'RoadSystem' to compute a 'Path' from
+            -> Path       -- ^ The optimal 'Path'
 optimalPath roadSystem =
     let (bestAPath, bestBPath,_,_) = foldl roadStep ([],[],0,0) roadSystem
     in  if sum (map snd bestAPath) <= sum (map snd bestBPath)
@@ -101,7 +128,7 @@ optimalPath' roadSystem =
         else reverse bestBPath
 
 roadStep :: (Path, Path, Int, Int) -> Section -> (Path, Path, Int, Int)
-roadStep (pathA, pathB, priceA, priceB) (Section a b c) =
+roadStep (!pathA, !pathB, !priceA, !priceB) (Section a b c) =
     let fwdPriceToA   = priceA + a
         crossPriceToA = priceB + b + c
         fwdPriceToB   = priceB + b
