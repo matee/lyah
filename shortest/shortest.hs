@@ -22,8 +22,13 @@ import qualified Data.ByteString.Char8 as C' (readInt,lines)
 -- | The main function, where you can switch 
 main = do
     args <- getArgs
+    let lenArgs = length args
+    when lenArgs == 0
+        error "Usage: ./shortest routes.file [method_number]"
     let fileName = head args
-        num = read . head . tail $ args :: Int
+        num = if lenArgs > 1
+              then read . head . tail $ args :: Int
+              else (-1)
     case num of
         1 -> simple fileName
         2 -> simple' fileName
